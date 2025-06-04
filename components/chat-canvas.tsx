@@ -33,33 +33,34 @@ export function ChatCanvas({
   const [transcript, setTranscript] = useState("")
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
 
   // Initialize audio element on client side only
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      audioRef.current = new Audio();
-      audioRef.current.addEventListener('ended', () => {
+      const audio = new Audio();
+      audio.addEventListener('ended', () => {
         setPlayingAudio(null);
       });
+      setAudioElement(audio);
+      
+      return () => {
+        audio.pause();
+        audio.src = '';
+      };
     }
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
-    };
   }, []);
 
   // Auto-play new interviewer messages
   useEffect(() => {
+    if (!audioElement) return;
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.type === 'interviewer' && lastMessage.audioFile) {
       handlePlayAudio(lastMessage.id);
     }
-  }, [messages]);
+  }, [messages, audioElement]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
@@ -115,15 +116,15 @@ export function ChatCanvas({
   }
 
   const handlePlayAudio = async (messageId: string) => {
-    if (!audioRef.current) return;
+    if (!audioElement) return;
 
     if (playingAudio === messageId) {
-      audioRef.current.pause();
+      audioElement.pause();
       setPlayingAudio(null);
     } else {
       // Stop any currently playing audio
       if (playingAudio) {
-        audioRef.current.pause();
+        audioElement.pause();
       }
 
       // Find the message with the audio
@@ -132,8 +133,8 @@ export function ChatCanvas({
 
       try {
         // Set the audio source directly to the URL from Murf API
-        audioRef.current.src = message.audioFile;
-        await audioRef.current.play();
+        audioElement.src = message.audioFile;
+        await audioElement.play();
         setPlayingAudio(messageId);
       } catch (error) {
         console.error('Error playing audio:', error);
@@ -186,7 +187,7 @@ export function ChatCanvas({
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Welcome to MockInterviewAI!</h3>
               <p className="text-gray-500 mb-4">
-                Select a character and interview type to begin your practice session.
+              Select a character and interview type to begin your practice session. Introduce yourself to start the interview.
               </p>
             </div>
           </div>

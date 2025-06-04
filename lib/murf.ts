@@ -8,10 +8,11 @@ export class MurfService {
 
   // Voice IDs for different characters
   private voiceMap = {
-    'jane': 'claire', // Female voice for Jane
-    'mike': 'james',  // Male voice for Mike
-    'sarah': 'emma',  // Female voice for Sarah
-  };
+  'jane': 'en-US-julia',    // Valid voice ID
+  'mike': 'en-US-terrell',  // Valid voice ID for male
+  'sarah': 'en-US-emma',   // Valid voice ID
+};
+
 
   constructor(config: MurfConfig) {
     if (!config.apiKey) {
@@ -30,11 +31,31 @@ export class MurfService {
       const voiceId = this.voiceMap[characterId as keyof typeof this.voiceMap] || 'claire';
       console.log('🎙️ Selected voice ID:', voiceId);
       
+      // Customize voice parameters based on character
+      let speed = 1.0;
+      let pitch = 1.0;
+
+      // Adjust parameters for each character
+      switch(characterId) {
+        case 'mike':
+          speed = 0.95; // Slightly slower for HR, more empathetic
+          pitch = 0.95; // Slightly lower pitch for authority
+          break;
+        case 'sarah':
+          speed = 1.05; // Slightly faster for dynamic PM style
+          pitch = 1.1; // Higher pitch for energy
+          break;
+        default:
+          // Default parameters for Jane (Tech Lead)
+          speed = 1.0;
+          pitch = 1.0;
+      }
+      
       const requestBody = {
         text,
         voice_id: voiceId,
-        speed: 1.0,
-        pitch: 1.0
+        speed,
+        pitch
       };
       
       console.log('📤 Sending request to Murf API:', {
